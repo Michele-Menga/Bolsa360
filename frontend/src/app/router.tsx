@@ -4,15 +4,24 @@ import PublicLayout from '../components/layout/PublicLayout'
 import HomePage from '../pages/HomePage'
 import OportunidadesPage from '../pages/OportunidadesPage'
 import NaoEncontradoPage from '../pages/NaoEncontradoPage'
+import RegisterPage from '../pages/RegisterPage'
+import AdminLayout from '../components/layout/AdminLayout'
+import PainelAdminPage from '../pages/admin/PainelAdminPage'
 
 export const router = createBrowserRouter([
-{
-      element: <PublicLayout />,
-      children: [
-        { path: '/', element: <HomePage /> },
-        { path: '/oportunidades', element: <OportunidadesPage /> },
-        { path: '/login', element: <LoginPage /> },
-      ],
-},
-  {path: '*',element: <NaoEncontradoPage />,},
+  {
+    element: <PublicLayout />,
+    children: [
+      { path: '/', element: <HomePage /> },
+      { path: '/oportunidades', element: <OportunidadesPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/registo', element: <RegisterPage /> },
+    ],
+  },
+  { path: '/admin', element: <AdminLayout />,
+    children: [
+      {index: true, element: <PainelAdminPage />,},
+    ],
+  },
+  {path: '*', element: <NaoEncontradoPage />, },
 ])
