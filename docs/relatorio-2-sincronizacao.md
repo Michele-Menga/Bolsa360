@@ -45,21 +45,31 @@ vezes sem duplicar).
 O **relatório 1** está em `docs/relatorio-mentoria-pagamentos.md` e cobre a fundo a mentoria e os
 pagamentos.
 
-**Commit atual:** `aab2f8e6af7038f55973b4315a6295b336da8715` ("docs: relatorio de mentoria e
-pagamentos"). Todo o meu trabalho está na branch `adianeth-branch`.
+Escrevi também a **primeira versão da consulta do catálogo público**, que é o arranque do dia
+17/10. Está em `backend/src/modules/oportunidades/oportunidades.repository.ts` e testei-a contra a
+base `bolsa360_dev` com um script auxiliar (`backend/scripts/experimentar-catalogo.ts`). Filtra
+tudo no servidor e devolve as oportunidades já no formato `data` + `meta` do contrato. Explico-a
+com detalhe na secção 5.
+
+**Estado do Git:** o push da `adianeth-branch` foi feito até ao commit
+`aab2f8e6af7038f55973b4315a6295b336da8715` ("docs: relatorio de mentoria e pagamentos"). Desde
+aí tenho commits por enviar: o `47a84c3` ("docs: relatorio 2 de sincronizacao da equipa"), o
+`5132db3` ("feat(db): consulta do catalogo de oportunidades publicas") e o commit desta própria
+atualização do relatório. Ainda não abri o pull request para a `main`.
 
 O que **ainda está por fazer**, com honestidade, face ao cronograma do documento (secção 15):
 
-- **Consultas, filtros e índices do catálogo** — previsto para 17/10. Ainda não estão escritos.
+- **Catálogo (17/10)** — a primeira versão da consulta já está feita e testada; falta a parte dos
+  **índices** (pesquisa por texto e um índice composto de estado editorial e prazo) e o **endpoint
+  de detalhe** (`GET /oportunidades/:id`).
 - **Persistência de perfil e favoritos** — previsto para 18/10. Ainda não está.
 - **Candidaturas, restrições únicas e histórico** — previsto para 19/10. A estrutura da base de
   dados já existe (tabelas, índice parcial e histórico), mas o código que a usa ainda não.
 
-Ou seja, estamos atrasados relativamente ao plano, mas não é dramático: o alicerce — schema,
-migrações, integridade e seed — está pronto e sólido, e é precisamente o que faz os três passos
-seguintes serem rápidos. Também vale a pena dizer que os endpoints da API e as páginas públicas
-dependem destes passos, por isso quanto mais depressa fecharmos o catálogo, mais cedo o Dillan e a
-Michele conseguem ligar as suas partes a dados a sério.
+Ou seja, continuamos um pouco atrasados relativamente ao plano, mas não é dramático: o alicerce —
+schema, migrações, integridade e seed — está pronto e sólido, e a consulta do catálogo já cobre a
+parte de que o Dillan e a Michele precisam para começar a ligar as suas partes a dados a sério.
+Falta fechar os índices e a função de detalhe, e depois seguir para perfil e favoritos.
 
 ## 2. Como pôr o projeto a funcionar na tua máquina
 
@@ -180,6 +190,39 @@ demonstração**, para os quatro estados de prazo voltarem a ficar corretos.
   `seed.ts`, e resolveu-se com um `tsconfig.json` no `backend/`. Como tu já tens um, depois vemos
   se acrescentas `prisma/**/*.ts` ao teu em vez de mantermos dois.
 
+### A consulta do catálogo já está escrita
+
+Está em `backend/src/modules/oportunidades/oportunidades.repository.ts` e encaixa no módulo
+`oportunidades` que o documento descreve na secção 12 (routes, controller, service, repository e
+schema): este ficheiro é o **repository**. Exporta `listarOportunidadesPublicas(prisma, filtros)`,
+mais `construirWhere` e `calcularEstadoPrazo`, e os tipos `FiltrosOportunidades` e `EstadoPrazo`.
+
+Como a usas: o **serviço** valida os parâmetros da query com Zod, converte-os para
+`FiltrosOportunidades` e chama `listarOportunidadesPublicas(prisma, filtros)`. A função recebe o
+cliente Prisma como parâmetro, precisamente para a poderes reutilizar e para os testes poderem
+apontar a uma base separada.
+
+Os filtros e os valores possíveis: `q` (texto; procura no título e na entidade financiadora, sem
+distinguir maiúsculas de minúsculas); `tipo` (código, por exemplo `BOLSA_UNIVERSITARIA`); `nivel`
+(código, por exemplo `MESTRADO`); `categoria` (slug, por exemplo `engenharia`); `paisDestino` (duas
+letras, por exemplo `PT`); `financiamento` (valores do enum `TipoFinanciamento`: `INTEGRAL`,
+`PARCIAL`, `PROPINA`, `ESTIPENDIO`, `CURSO_GRATUITO`, `OUTRO`); `elegibilidadeAngolanos`
+(`ELEGIVEL`, `NAO_ELEGIVEL`, `POR_CONFIRMAR`); `estadoPrazo` (`FUTURO`, `ABERTO`, `EXPIRADO`,
+`SEM_PRAZO_CONFIRMADO`); `ordenar` (`prazo` ou `recentes`); e `pagina` e `limite` (teto de 50, por
+defeito 10). Parâmetros inválidos devem dar **400**.
+
+O controller não deve conter regras: a paginação e o formato `data` + `meta` (`pagina`, `limite`,
+`total`) já vêm resolvidos daqui. Os `Decimal` saem como texto no JSON (por exemplo `"12000"`) e as
+datas em formato ISO.
+
+Testei contra a `bolsa360_dev`: com `estadoPrazo: 'ABERTO'` devolveu 2 oportunidades (a bolsa
+universitária aberta e o curso de língua). A oportunidade `PENDENTE` do seed **não** aparece — é
+exatamente para isso que ela serve, para testares que o catálogo público não a mostra.
+
+O **endpoint de detalhe** (`GET /oportunidades/:id`) ainda não existe: vai precisar de uma função
+própria, a adicionar por mim, com as regras de elegibilidade, os documentos exigidos e a fonte
+oficial. Quando a escrever, aviso-te.
+
 ## 6. Observações para a Michele e o José (frontend e integração)
 
 - **O frontend nunca liga à base de dados.** Nada de `DATABASE_URL` nem de acesso direto ao
@@ -188,9 +231,17 @@ demonstração**, para os quatro estados de prazo voltarem a ficar corretos.
   documento mostra a resposta com um campo `data` (lista de oportunidades) e um campo `meta`
   (paginação, com `pagina`, `limite` e `total`). Se mexerem nesse formato depois, é retrabalho para
   todos.
+- **O que a API vai devolver por oportunidade.** Quando os endpoints existirem, cada oportunidade
+  do catálogo traz: `id`, título, entidade financiadora, tipo, nível, país de destino, modalidade,
+  tipo e valor de financiamento, moeda, datas de abertura e prazo, fonte oficial, data da última
+  verificação, `estadoPrazo` e `elegibilidadeAngolanos`. Montem os filtros do frontend a partir
+  desta lista (os mesmos que a consulta aceita, na secção 5), e usem dados fictícios exatamente
+  neste formato até os endpoints existirem.
 - **Nunca mostrar "elegível" quando o estado é `POR_CONFIRMAR`.** Isto é a RN-03 e a RN-17: se a
   fonte não confirma, mostramos "por confirmar", nunca inventamos. A compatibilidade do candidato é
-  "preliminar" e explicável, não uma decisão oficial (secção 11.4).
+  "preliminar" e explicável, não uma decisão oficial (secção 11.4). E usem o `estadoPrazo` que o
+  servidor calcula — **não o recalculam** no frontend, para não haver duas verdades sobre o mesmo
+  prazo.
 - **Mostrar a fonte oficial e a data da última verificação.** Cada oportunidade tem
   `urlFonteOficial` e `ultimaVerificacaoEm` — são para aparecer (RN-02).
 - **Os estados de prazo e a oportunidade expirada continuam visíveis.** Uma oportunidade expirada
@@ -222,11 +273,12 @@ demonstração**, para os quatro estados de prazo voltarem a ficar corretos.
 ## 8. Próximos passos (18/10 a 25/10), alinhados com o documento
 
 Aqui vai o que o cronograma da secção 15 prevê, a começar em hoje, 18/10, e os marcos da secção 16.
-Lembro que 17/10 já passou e as tarefas desse dia (consultas, filtros e índices) ainda estão por
-fazer — é o primeiro item a fechar.
+Lembro que 17/10 já passou: desse dia já está feita a primeira versão da consulta do catálogo, e
+falta-me fechar os índices e a função de detalhe.
 
-**18/10** — Adia: persistência de perfil e favoritos. Dillan: rotas protegidas e propriedade dos
-recursos. Michele: detalhes, cartões e responsividade. José: perfil e favoritos integrados.
+**18/10** — Adia: acabar os índices do catálogo e a função de detalhe, e depois a persistência de
+perfil e favoritos. Dillan: rotas protegidas e propriedade dos recursos. Michele: detalhes, cartões
+e responsividade. José: perfil e favoritos integrados.
 
 **19/10** — Adia: candidaturas, restrições únicas e histórico. Dillan: endpoints e transições de
 estado. Michele: estados visuais. José: painel de candidaturas.
@@ -266,10 +318,12 @@ E três notas que não quero deixar implícitas:
 ## 9. Pontos em aberto (para decidirmos esta semana)
 
 - Confirmar com o Dillan que o login usa Argon2id (senão as contas do seed não entram).
-- Fechar o atraso de 17/10: consultas, filtros e índices do catálogo.
+- Enviar o commit do relatório 2 e a consulta do catálogo, abrir o pull request para a `main` e
+  pedir revisão ao Dillan.
 - Resolver o conflito de `package.json` e `tsconfig.json` com a branch do Dillan.
-- Confirmar o commit e fazer o **push** da `adianeth-branch` (nada foi enviado para o remoto ainda)
-  e apagar a `Adianeth-branch` com maiúscula no GitHub.
+- Confirmar com o Dillan o formato dos erros **400** (parâmetros inválidos) e **409** (duplicados
+  de candidatura e sobreposição de horários).
+- Apagar a `Adianeth-branch` com maiúscula no GitHub.
 - Decidir se o PDF do documento e o `tsconfig.json` entram no repositório (neste momento estão
   fora do controlo de versões, por confirmar onde devem ficar).
 - Decidir a disponibilidade dos mentores e onde guardar o conteúdo da mentoria geral.
