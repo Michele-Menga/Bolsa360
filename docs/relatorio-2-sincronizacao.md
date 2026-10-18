@@ -265,9 +265,10 @@ oficial. Quando a escrever, aviso-te.
 - **As migrações vão sempre no commit.** Sem elas, quem fizer `git pull` fica com uma base
   desatualizada e não consegue reproduzir nada.
 - **O `.env` nunca vai para o Git.** Está no `.gitignore` da raiz e no do backend.
-- **O nome correto da branch é `adianeth-branch`**, todo em minúsculas. Existe no GitHub uma
-  `Adianeth-branch` com maiúscula (mais antiga) que deve ser apagada — confirmado: no remoto
-  existem as duas, `adianeth-branch` no commit `aab2f8e` e `Adianeth-branch` no commit `a5c7189`.
+- **O nome correto da branch é `adianeth-branch`**, todo em minúsculas. Não existe nenhuma
+  `Adianeth-branch` no remoto. Nota de Windows: nomes que só diferem na caixa das letras colidem
+  no disco local, por isso usem sempre minúsculas e confirmem com
+  `git ls-remote --heads origin`, que é o que vale.
 - **Não reutilizar nem partilhar bases de dados** entre pessoas.
 
 ## 8. Próximos passos (18/10 a 25/10), alinhados com o documento
@@ -323,7 +324,6 @@ E três notas que não quero deixar implícitas:
 - Resolver o conflito de `package.json` e `tsconfig.json` com a branch do Dillan.
 - Confirmar com o Dillan o formato dos erros **400** (parâmetros inválidos) e **409** (duplicados
   de candidatura e sobreposição de horários).
-- Apagar a `Adianeth-branch` com maiúscula no GitHub.
 - Decidir se o PDF do documento e o `tsconfig.json` entram no repositório (neste momento estão
   fora do controlo de versões, por confirmar onde devem ficar).
 - Decidir a disponibilidade dos mentores e onde guardar o conteúdo da mentoria geral.
