@@ -1,8 +1,12 @@
 import { Router } from "express";
-import { listar } from "./oportunidades.controller";
+import { z } from "zod";
+import { listar, obter } from "./oportunidades.controller";
 import { listarOportunidadesQuerySchema } from "./oportunidades.schema";
-import { validateQuery } from "../../middlewares/validate";
+import { validateParams, validateQuery } from "../../middlewares/validate";
 
 export const oportunidadesRouter = Router();
 
+const idParamSchema = z.object({ id: z.uuid() });
+
 oportunidadesRouter.get("/", validateQuery(listarOportunidadesQuerySchema), listar);
+oportunidadesRouter.get("/:id", validateParams(idParamSchema), obter);

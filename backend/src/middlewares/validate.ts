@@ -22,6 +22,22 @@ export function validateQuery(schema: ZodType) {
   };
 }
 
+export function validateParams(schema: ZodType) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req.params);
+
+    if (!result.success) {
+      next(
+        new AppError(400, "Identificador inválido.", "VALIDACAO_INVALIDA"),
+      );
+      return;
+    }
+
+    res.locals.params = result.data;
+    next();
+  };
+}
+
 export function validateBody(schema: ZodType) {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = schema.safeParse(req.body);

@@ -7,6 +7,7 @@ import { notFound } from "./middlewares/not-found";
 import { errorHandler } from "./middlewares/error-handler";
 import { oportunidadesRouter } from "./modules/oportunidades/oportunidades.routes";
 import { autenticacaoRouter } from "./modules/autenticacao/autenticacao.routes";
+import { administracaoRouter } from "./modules/administracao/administracao.routes";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/api/v1/saude", (_req, res) => {
 
 app.use("/api/v1/auth", autenticacaoRouter);
 app.use("/api/v1/oportunidades", oportunidadesRouter);
+app.use("/api/v1/admin", administracaoRouter);
 
 app.use(notFound);
 app.use(errorHandler);
