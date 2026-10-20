@@ -46,6 +46,43 @@ describe("Catálogo público de oportunidades", () => {
     }
   });
 
+  it("pesquisa por texto livre", async () => {
+    const resposta = await request(app)
+      .get("/api/v1/oportunidades")
+      .query({ q: "Curso" });
+
+    expect(resposta.status).toBe(200);
+    expect(resposta.body.data.length).toBeGreaterThan(0);
+
+    for (const oportunidade of resposta.body.data) {
+      const texto =
+        `${oportunidade.titulo} ${oportunidade.entidadeFinanciadora}`.toLowerCase();
+      expect(texto).toContain("curso");
+    }
+  });
+
+  it("filtra por código de tipo de oportunidade", async () => {
+    const resposta = await request(app)
+      .get("/api/v1/oportunidades")
+      .query({ tipo: "BOLSA_UNIVERSITARIA" });
+
+    expect(resposta.status).toBe(200);
+    expect(resposta.body.data.length).toBeGreaterThan(0);
+
+    for (const oportunidade of resposta.body.data) {
+      expect(oportunidade.tipo.codigo).toBe("BOLSA_UNIVERSITARIA");
+    }
+  });
+
+  it("rejeita um critério de ordenação inválido", async () => {
+    const resposta = await request(app)
+      .get("/api/v1/oportunidades")
+      .query({ ordenar: "aleatorio" });
+
+    expect(resposta.status).toBe(400);
+    expect(resposta.body.erro.codigo).toBe("VALIDACAO_INVALIDA");
+  });
+
   it("rejeita paginação inválida", async () => {
     const resposta = await request(app)
       .get("/api/v1/oportunidades")

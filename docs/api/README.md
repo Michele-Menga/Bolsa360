@@ -68,15 +68,15 @@ Query (todos opcionais):
 | --- | --- | --- |
 | `pagina` | inteiro > 0 | default `1` |
 | `limite` | inteiro 1–50 | default `10` |
-| `pesquisa` | texto | título/entidade |
-| `tipoOportunidadeId` | uuid | |
-| `nivelEnsinoId` | uuid | |
-| `categoriaSlug` | texto | |
-| `paisDestinoCodigo` | 2 letras | ex.: `PT` |
-| `modalidade` | enum | `PRESENCIAL`, `ONLINE`, `HIBRIDA`, `NAO_APLICAVEL` |
-| `tipoFinanciamento` | enum | `INTEGRAL`, `PARCIAL`, `PROPINA`, `ESTIPENDIO`, `CURSO_GRATUITO`, `OUTRO` |
+| `q` | texto | pesquisa no título e entidade financiadora |
+| `tipo` | texto | código do tipo, ex.: `BOLSA_UNIVERSITARIA` |
+| `nivel` | texto | código do nível, ex.: `MESTRADO` |
+| `categoria` | texto | slug, ex.: `engenharia` |
+| `paisDestino` | 2 letras | ex.: `PT` |
+| `financiamento` | enum | `INTEGRAL`, `PARCIAL`, `PROPINA`, `ESTIPENDIO`, `CURSO_GRATUITO`, `OUTRO` |
 | `elegibilidadeAngolanos` | enum | `ELEGIVEL`, `NAO_ELEGIVEL`, `POR_CONFIRMAR` |
 | `estadoPrazo` | enum | `FUTURO`, `ABERTO`, `EXPIRADO`, `SEM_PRAZO_CONFIRMADO` |
+| `ordenar` | enum | `prazo` (default) ou `recentes` |
 
 `200` →
 ```json
@@ -85,11 +85,12 @@ Query (todos opcionais):
     {
       "id": "…", "titulo": "…", "entidadeFinanciadora": "…",
       "tipo": { "codigo": "…", "nome": "…" },
+      "nivelEnsino": { "codigo": "…", "nome": "…" },
       "paisDestinoCodigo": "PT", "modalidade": "ONLINE",
       "tipoFinanciamento": "INTEGRAL", "valorFinanciamento": "12000",
       "moeda": "EUR", "dataAbertura": "…", "prazoCandidatura": "…",
       "estadoPrazo": "ABERTO", "elegibilidadeAngolanos": "ELEGIVEL",
-      "urlFonteOficial": "https://…"
+      "urlFonteOficial": "https://…", "ultimaVerificacaoEm": "…"
     }
   ],
   "meta": { "pagina": 1, "limite": 10, "total": 5, "totalPaginas": 1 }

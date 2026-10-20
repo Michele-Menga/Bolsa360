@@ -1,47 +1,43 @@
 import { prisma } from "../../config/database";
 import { AppError } from "../../shared/errors/AppError";
+import { calcularEstadoPrazo } from "../../shared/utils/prazo";
 import {
   FiltrosOportunidades,
   listarOportunidadesPublicas,
-  obterOportunidadePublica,
 } from "./oportunidades.repository";
+import { obterOportunidadePublica } from "./oportunidades.detalhe.repository";
 import { ListarOportunidadesQuery } from "./oportunidades.schema";
-import { calcularEstadoPrazo } from "../../shared/utils/prazo";
 
 function paraFiltros(query: ListarOportunidadesQuery): FiltrosOportunidades {
-  return query;
+  return {
+    q: query.q,
+    tipo: query.tipo,
+    nivel: query.nivel,
+    categoria: query.categoria,
+    paisDestino: query.paisDestino,
+    financiamento: query.financiamento,
+    elegibilidadeAngolanos: query.elegibilidadeAngolanos,
+    estadoPrazo: query.estadoPrazo,
+    ordenar: query.ordenar,
+    pagina: query.pagina,
+    limite: query.limite,
+  };
 }
 
 export async function listarOportunidades(query: ListarOportunidadesQuery) {
-  const filtros = paraFiltros(query);
-  const { oportunidades, total } = await listarOportunidadesPublicas(prisma, filtros);
+  const resultado = await listarOportunidadesPublicas(
+    prisma,
+    paraFiltros(query),
+  );
 
   return {
-    data: oportunidades.map((oportunidade) => ({
-      id: oportunidade.id,
-      titulo: oportunidade.titulo,
-      entidadeFinanciadora: oportunidade.entidadeFinanciadora,
-      tipo: oportunidade.tipo,
-      paisDestinoCodigo: oportunidade.paisDestinoCodigo,
-      modalidade: oportunidade.modalidade,
-      tipoFinanciamento: oportunidade.tipoFinanciamento,
+    data: resultado.data.map((oportunidade) => ({
+      ...oportunidade,
       valorFinanciamento: oportunidade.valorFinanciamento?.toString() ?? null,
-      moeda: oportunidade.moeda,
-      dataAbertura: oportunidade.dataAbertura,
-      prazoCandidatura: oportunidade.prazoCandidatura,
-      estadoPrazo: calcularEstadoPrazo(
-        oportunidade.dataAbertura,
-        oportunidade.prazoCandidatura,
-      ),
-      elegibilidadeAngolanos:
-        oportunidade.paisesElegiveis[0]?.resultado ?? "POR_CONFIRMAR",
-      urlFonteOficial: oportunidade.urlFonteOficial,
     })),
     meta: {
-      pagina: filtros.pagina,
-      limite: filtros.limite,
-      total,
-      totalPaginas: Math.ceil(total / filtros.limite),
+      ...resultado.meta,
+      totalPaginas: Math.ceil(resultado.meta.total / resultado.meta.limite),
     },
   };
 }
