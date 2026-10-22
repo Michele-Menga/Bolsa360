@@ -34,8 +34,8 @@ function lerPalavraPasse(nomeVariavel: string): string {
   ) {
     throw new Error(
       `Variável de ambiente ${nomeVariavel} em falta ou inválida. ` +
-        "Define uma palavra-passe com pelo menos 8 caracteres no backend/.env " +
-        "(usa o backend/.env.example como modelo).",
+      "Define uma palavra-passe com pelo menos 8 caracteres no backend/.env " +
+      "(usa o backend/.env.example como modelo).",
     );
   }
   return valor;
