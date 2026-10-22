@@ -1,16 +1,13 @@
--- RNF-12: índices para os filtros e consultas frequentes do catálogo público.
+-- Criar a extensão no schema public se ainda não existir
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
--- Índice composto: o catálogo só mostra oportunidades PUBLICADA (RN-01)
--- e filtra/ordena sempre pelo prazo de candidatura.
-CREATE INDEX oportunidades_estado_prazo_idx
-  ON oportunidades (estado_editorial, prazo_candidatura);
+-- 1. Índice composto para o catálogo público (estado editorial + prazo)
+CREATE INDEX IF NOT EXISTS "oportunidades_estado_prazo_idx" 
+ON "public"."oportunidades" ("estado_editorial", "prazo_candidatura");
 
--- Pesquisa de texto por título e entidade financiadora. O Prisma gera
--- ILIKE '%texto%', que não usa índices B-tree; pg_trgm + GIN acelera isto.
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+-- 2. Índices de pesquisa por texto usando pg_trgm qualificados para o schema public
+CREATE INDEX IF NOT EXISTS "oportunidades_titulo_trgm_idx" 
+ON "public"."oportunidades" USING gin ("titulo" public.gin_trgm_ops);
 
-CREATE INDEX oportunidades_titulo_trgm_idx
-  ON oportunidades USING gin (titulo gin_trgm_ops);
-
-CREATE INDEX oportunidades_entidade_trgm_idx
-  ON oportunidades USING gin (entidade_financiadora gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS "oportunidades_entidade_trgm_idx" 
+ON "public"."oportunidades" USING gin ("entidade_financiadora" public.gin_trgm_ops);
