@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database";
 import { AppError } from "../../shared/errors/AppError";
+import { registarAuditoria } from "../auditoria/auditoria.repository";
+import { metricasAdmin } from "./administracao.repository";
 import {
   AtualizarOportunidadeInput,
   CriarOportunidadeInput,
@@ -95,15 +97,32 @@ export async function listarOportunidadesAdmin(query: ListarAdminQuery) {
 export async function criarOportunidade(
   administradorId: string,
   dados: CriarOportunidadeInput,
+  enderecoIp?: string | null,
 ) {
-  const criada = await prisma.oportunidade.create({
-    data: {
-      ...dados,
-      valorFinanciamento: valorComoTexto(dados.valorFinanciamento),
-      estadoEditorial: "RASCUNHO",
-      criadoPorId: administradorId,
-    },
-    include: { tipo: { select: { codigo: true, nome: true } } },
+  const criada = await prisma.$transaction(async (tx) => {
+    const oportunidade = await tx.oportunidade.create({
+      data: {
+        ...dados,
+        valorFinanciamento: valorComoTexto(dados.valorFinanciamento),
+        estadoEditorial: "RASCUNHO",
+        criadoPorId: administradorId,
+      },
+      include: { tipo: { select: { codigo: true, nome: true } } },
+    });
+
+    await registarAuditoria(tx, {
+      atorUtilizadorId: administradorId,
+      acao: "CRIAR_OPORTUNIDADE",
+      tipoEntidade: "Oportunidade",
+      entidadeId: oportunidade.id,
+      detalhesMinimos: {
+        titulo: oportunidade.titulo,
+        estadoEditorial: oportunidade.estadoEditorial,
+      },
+      enderecoIp: enderecoIp ?? null,
+    });
+
+    return oportunidade;
   });
 
   return serializar(criada);
@@ -158,22 +177,41 @@ export async function obterOportunidadeAdmin(id: string) {
 export async function atualizarOportunidade(
   id: string,
   dados: AtualizarOportunidadeInput,
+  administradorId: string,
+  enderecoIp?: string | null,
 ) {
   await garantirQueExiste(id);
 
-  const atualizada = await prisma.oportunidade.update({
-    where: { id },
-    data: {
-      ...dados,
-      valorFinanciamento: valorComoTexto(dados.valorFinanciamento),
-    },
-    include: { tipo: { select: { codigo: true, nome: true } } },
+  const atualizada = await prisma.$transaction(async (tx) => {
+    const oportunidade = await tx.oportunidade.update({
+      where: { id },
+      data: {
+        ...dados,
+        valorFinanciamento: valorComoTexto(dados.valorFinanciamento),
+      },
+      include: { tipo: { select: { codigo: true, nome: true } } },
+    });
+
+    await registarAuditoria(tx, {
+      atorUtilizadorId: administradorId,
+      acao: "ATUALIZAR_OPORTUNIDADE",
+      tipoEntidade: "Oportunidade",
+      entidadeId: id,
+      detalhesMinimos: { campos: Object.keys(dados) },
+      enderecoIp: enderecoIp ?? null,
+    });
+
+    return oportunidade;
   });
 
   return serializar(atualizada);
 }
 
-export async function publicarOportunidade(id: string, administradorId: string) {
+export async function publicarOportunidade(
+  id: string,
+  administradorId: string,
+  enderecoIp?: string | null,
+) {
   return prisma.$transaction(async (tx) => {
     const oportunidade = await tx.oportunidade.findUnique({ where: { id } });
     if (!oportunidade) {
@@ -199,18 +237,51 @@ export async function publicarOportunidade(id: string, administradorId: string) 
       },
     });
 
+    await registarAuditoria(tx, {
+      atorUtilizadorId: administradorId,
+      acao: "PUBLICAR_OPORTUNIDADE",
+      tipoEntidade: "Oportunidade",
+      entidadeId: id,
+      detalhesMinimos: {
+        estadoAnterior: oportunidade.estadoEditorial,
+        estadoNovo: "PUBLICADA",
+      },
+      enderecoIp: enderecoIp ?? null,
+    });
+
     return serializar(atualizada);
   });
 }
 
-export async function arquivarOportunidade(id: string) {
+export async function arquivarOportunidade(
+  id: string,
+  administradorId: string,
+  enderecoIp?: string | null,
+) {
   await garantirQueExiste(id);
 
-  const atualizada = await prisma.oportunidade.update({
-    where: { id },
-    data: { estadoEditorial: "ARQUIVADA" },
-    include: { tipo: { select: { codigo: true, nome: true } } },
+  const atualizada = await prisma.$transaction(async (tx) => {
+    const oportunidade = await tx.oportunidade.update({
+      where: { id },
+      data: { estadoEditorial: "ARQUIVADA" },
+      include: { tipo: { select: { codigo: true, nome: true } } },
+    });
+
+    await registarAuditoria(tx, {
+      atorUtilizadorId: administradorId,
+      acao: "ARQUIVAR_OPORTUNIDADE",
+      tipoEntidade: "Oportunidade",
+      entidadeId: id,
+      detalhesMinimos: { estadoNovo: "ARQUIVADA" },
+      enderecoIp: enderecoIp ?? null,
+    });
+
+    return oportunidade;
   });
 
   return serializar(atualizada);
+}
+
+export async function obterMetricasAdmin() {
+  return metricasAdmin(prisma);
 }

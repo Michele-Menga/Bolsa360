@@ -6,6 +6,7 @@ export { app };
 export const EMAIL_ADMIN = "admin@example.org";
 export const EMAIL_ANA = "ana.demo@example.org";
 
+export const UTILIZADOR_ADMIN = "00000000-0000-4000-8000-000000000001";
 export const UTILIZADOR_ANA = "00000000-0000-4000-8000-000000000011";
 
 export const OPORTUNIDADE_1 = "00000000-0000-4000-8000-000000000401";

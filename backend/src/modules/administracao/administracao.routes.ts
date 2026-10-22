@@ -6,6 +6,7 @@ import {
   atualizar,
   criar,
   listar,
+  metricas,
   obter,
   publicar,
 } from "./administracao.controller";
@@ -24,6 +25,7 @@ const idParamSchema = z.object({ id: z.uuid() });
 
 administracaoRouter.use(authenticate, authorize(Papel.ADMIN));
 
+administracaoRouter.get("/metricas", metricas);
 administracaoRouter.get("/oportunidades", validateQuery(listarAdminQuerySchema), listar);
 administracaoRouter.post(
   "/oportunidades",
