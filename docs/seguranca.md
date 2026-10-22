@@ -174,9 +174,12 @@ pessoais expostos no cookie.
 - Erros inesperados devolvem `500 ERRO_INTERNO` sem stack trace; o detalhe é
   escrito apenas no servidor via `console.error` (`middlewares/error-handler.ts`).
 - Não há logging estruturado, correlação de pedidos nem alertas no P0.
-- O modelo `RegistoAuditoria` (`registos_auditoria`) já existe no schema, mas
-  **ainda não é escrito** pela aplicação; a auditoria das ações
-  administrativas está prevista para a tarefa seguinte (RN-08).
+- As operações administrativas de criação, atualização, publicação e
+  arquivamento escrevem em `registos_auditoria` **na mesma transação** da
+  alteração (RN-08). O registo guarda o ator, a ação, o tipo e o id da entidade,
+  detalhes mínimos (sem segredos) e o IP do pedido (`req.ip`).
+- A auditoria cobre apenas as ações de administração de oportunidades no P0.
+  Login/logout, alterações de perfil e candidaturas ainda não são auditados.
 
 ---
 
@@ -199,7 +202,8 @@ pessoais expostos no cookie.
 3. Rate limit apenas no login, em memória e por processo.
 4. Sem `helmet`/CSP/HSTS na aplicação (podem ser aplicados no proxy).
 5. Sem token CSRF (mitigado por `SameSite=Lax` + CORS restrito).
-6. Auditoria ainda não escrita apesar de o modelo existir.
+6. Auditoria limitada às ações de administração de oportunidades; falta cobrir
+   login/logout, perfil e candidaturas.
 7. Sem verificação de email, recuperação de palavra-passe ou MFA.
 8. Sem monitorização, alertas ou logs estruturados.
 9. Credenciais de seed de demonstração no `.env` local.

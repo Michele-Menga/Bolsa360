@@ -109,12 +109,23 @@ Todas as rotas exigem `ADMIN`.
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
+| `GET` | `/admin/metricas` | Totais do painel: `utilizadores`, `oportunidades`, `pendencias`, `candidaturas` |
 | `GET` | `/admin/oportunidades` | Lista com `pagina`, `limite`, `estadoEditorial`, `pesquisa` |
 | `POST` | `/admin/oportunidades` | Cria em `RASCUNHO` → `201` |
 | `GET` | `/admin/oportunidades/:id` | Detalhe (qualquer estado) |
 | `PATCH` | `/admin/oportunidades/:id` | Atualização parcial |
 | `POST` | `/admin/oportunidades/:id/publicar` | Publica + registo de verificação |
 | `POST` | `/admin/oportunidades/:id/arquivar` | Arquiva |
+
+### `GET /admin/metricas`
+```json
+{ "data": { "utilizadores": 7, "oportunidades": 6, "pendencias": 1, "candidaturas": 2 } }
+```
+
+As operações de escrita (criar, atualizar, publicar e arquivar) gravam um
+registo em `registos_auditoria` na mesma transação da alteração. O registo
+inclui o administrador, a ação, a entidade, o `id` e o IP do pedido, sem dados
+sensíveis.
 
 Corpo de criação (campos `*` obrigatórios):
 `titulo*`, `entidadeFinanciadora*`, `tipoOportunidadeId*`, `descricao*`,
