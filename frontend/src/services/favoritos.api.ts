@@ -5,7 +5,7 @@ export interface Favorito {
   oportunidade_id: string;
   oportunidades?: {
     titulo?: string;
-    instituicao?: string;
+    entidade_financiadora?: string;
   };
 }
 

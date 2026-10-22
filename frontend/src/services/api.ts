@@ -1,20 +1,22 @@
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+export const API_URL = 'http://localhost:3000/api/v1';
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const config: RequestInit = {
     ...options,
+    credentials: 'include', // Obrigatorio para enviar os cookies HttpOnly de sessão
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    // Garante que cookies de sessão sejam enviados com os pedidos
-    credentials: 'include',
-  });
+  };
+
+  const response = await fetch(`${API_URL}${endpoint}`, config);
+  const data = await response.json();
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Erro na requisição: ${response.status}`);
+    const mensagemErro = data?.error?.mensagem || data?.erro?.mensagem || 'Ocorreu um erro na requisição.';
+    throw new Error(mensagemErro);
   }
 
-  return response.json();
+  return data as T;
 }
