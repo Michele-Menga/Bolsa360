@@ -1,0 +1,582 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- ENUMS ----------------
+
+enum Papel {
+  CANDIDATO
+  ADMIN
+  MENTOR
+}
+
+enum EstadoUtilizador {
+  ATIVO
+  SUSPENSO
+  DESATIVADO
+}
+
+enum Modalidade {
+  PRESENCIAL
+  ONLINE
+  HIBRIDA
+  NAO_APLICAVEL
+}
+
+enum TipoFinanciamento {
+  INTEGRAL
+  PARCIAL
+  PROPINA
+  ESTIPENDIO
+  CURSO_GRATUITO
+  OUTRO
+}
+
+enum EstadoEditorial {
+  RASCUNHO
+  PENDENTE
+  VERIFICADA
+  PUBLICADA
+  REJEITADA
+  ARQUIVADA
+}
+
+enum TipoRegra {
+  NACIONALIDADE
+  IDADE
+  NIVEL_ENSINO
+  NOTA_MINIMA
+  AREA_ESTUDO
+  INSTITUICAO
+  IDIOMA
+  RESIDENCIA
+  RENDIMENTO
+  EXPERIENCIA
+  DOCUMENTO
+  OUTRA
+}
+
+enum OperadorRegra {
+  IGUAL
+  DIFERENTE
+  MAIOR_IGUAL
+  MENOR_IGUAL
+  ENTRE
+  CONTEM
+  UM_DE
+  TEXTO_INFORMATIVO
+}
+
+enum Obrigatoriedade {
+  OBRIGATORIA
+  PREFERENCIAL
+  INFORMATIVA
+}
+
+enum EstadoConfirmacao {
+  CONFIRMADA
+  POR_CONFIRMAR
+  NAO_APLICAVEL
+}
+
+enum TipoCriterio {
+  NACIONALIDADE
+  RESIDENCIA
+}
+
+enum ResultadoElegibilidade {
+  ELEGIVEL
+  NAO_ELEGIVEL
+  POR_CONFIRMAR
+}
+
+enum EstadoCandidatura {
+  PLANEADA
+  EM_PREPARACAO
+  SUBMETIDA_EXTERNAMENTE
+  EM_AVALIACAO
+  ACEITE
+  REJEITADA
+  CANCELADA
+}
+
+enum EstadoVerificacao {
+  PENDENTE
+  VERIFICADA
+  REJEITADA
+}
+
+// ---------------- UTILIZADORES E PERFIL ----------------
+
+model Utilizador {
+  id               String           @id @default(uuid()) @db.Uuid
+  nome             String           @db.VarChar(120)
+  email            String           @unique @db.VarChar(254)
+  palavraPasseHash String           @map("palavra_passe_hash")
+  papel            Papel            @default(CANDIDATO)
+  estado           EstadoUtilizador @default(ATIVO)
+  criadoEm         DateTime         @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm     DateTime         @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  perfil               PerfilCandidato?
+  favoritos            Favorito[]
+  candidaturas         Candidatura[]
+  oportunidadesCriadas Oportunidade[]
+  verificacoes         VerificacaoOportunidade[]
+  historicoAlteracoes  HistoricoCandidatura[]
+  registosAuditoria    RegistoAuditoria[]
+  mentor               Mentor?
+  agendamentos         AgendamentoMentoria[]
+  pagamentos           Pagamento[]
+  acessoServicos       AcessoServico[]
+  conversaIAs          ConversaIA[]
+
+  @@map("utilizadores")
+}
+
+model PerfilCandidato {
+  utilizadorId         String    @id @map("utilizador_id") @db.Uuid
+  nacionalidadeCodigo  String    @map("nacionalidade_codigo") @db.Char(2)
+  dataNascimento       DateTime? @map("data_nascimento") @db.Date
+  nivelEnsinoAtualId   String?   @map("nivel_ensino_atual_id") @db.Uuid
+  areaEstudo           String?   @map("area_estudo") @db.VarChar(100)
+  instituicaoEnsino    String?   @map("instituicao_ensino") @db.VarChar(200)
+  paisDestinoPreferido String?   @map("pais_destino_preferido") @db.Char(2)
+  idiomas              Json?     @db.JsonB
+  criadoEm             DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm         DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  utilizador       Utilizador   @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+  nivelEnsinoAtual NivelEnsino? @relation(fields: [nivelEnsinoAtualId], references: [id], onDelete: SetNull)
+
+  @@map("perfis_candidato")
+}
+
+// ---------------- CATALOGOS ----------------
+
+model TipoOportunidade {
+  id        String  @id @default(uuid()) @db.Uuid
+  nome      String  @unique @db.VarChar(80)
+  codigo    String  @unique @db.VarChar(40)
+  descricao String  @db.Text
+  ativo     Boolean @default(true)
+
+  oportunidades Oportunidade[]
+
+  @@map("tipos_oportunidade")
+}
+
+model NivelEnsino {
+  id     String  @id @default(uuid()) @db.Uuid
+  nome   String  @unique @db.VarChar(80)
+  codigo String  @unique @db.VarChar(40)
+  ordem  Int     @default(0)
+  ativo  Boolean @default(true)
+
+  perfis        PerfilCandidato[]
+  oportunidades Oportunidade[]
+
+  @@map("niveis_ensino")
+}
+
+model CategoriaEstudo {
+  id        String  @id @default(uuid()) @db.Uuid
+  nome      String  @unique @db.VarChar(100)
+  slug      String  @unique @db.VarChar(120)
+  descricao String? @db.Text
+
+  oportunidades OportunidadeCategoria[]
+
+  @@map("categorias_estudo")
+}
+
+// ---------------- OPORTUNIDADES ----------------
+
+model Oportunidade {
+  id                   String            @id @default(uuid()) @db.Uuid
+  titulo               String            @db.VarChar(200)
+  entidadeFinanciadora String            @map("entidade_financiadora") @db.VarChar(200)
+  tipoOportunidadeId   String            @map("tipo_oportunidade_id") @db.Uuid
+  descricao            String            @db.Text
+  nivelEnsinoId        String?           @map("nivel_ensino_id") @db.Uuid
+  paisDestinoCodigo    String?           @map("pais_destino_codigo") @db.Char(2)
+  modalidade           Modalidade        @default(NAO_APLICAVEL)
+  tipoFinanciamento    TipoFinanciamento @map("tipo_financiamento")
+  valorFinanciamento   Decimal?          @map("valor_financiamento") @db.Decimal(14, 2)
+  moeda                String?           @db.Char(3)
+  dataAbertura         DateTime?         @map("data_abertura") @db.Date
+  prazoCandidatura     DateTime?         @map("prazo_candidatura") @db.Date
+  cicloAno             String?           @map("ciclo_ano") @db.VarChar(20)
+  urlFonteOficial      String            @map("url_fonte_oficial") @db.Text
+  urlCandidatura       String?           @map("url_candidatura") @db.Text
+  estadoEditorial      EstadoEditorial   @default(RASCUNHO) @map("estado_editorial")
+  ultimaVerificacaoEm  DateTime?         @map("ultima_verificacao_em") @db.Timestamptz
+  criadoPorId          String            @map("criado_por_id") @db.Uuid
+  criadoEm             DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm         DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  tipo        TipoOportunidade @relation(fields: [tipoOportunidadeId], references: [id], onDelete: Restrict)
+  nivelEnsino NivelEnsino?     @relation(fields: [nivelEnsinoId], references: [id], onDelete: SetNull)
+  criadoPor   Utilizador       @relation(fields: [criadoPorId], references: [id], onDelete: Restrict)
+
+  categorias         OportunidadeCategoria[]
+  regras             RegraElegibilidade[]
+  paisesElegiveis    ElegibilidadePais[]
+  documentosExigidos DocumentoExigido[]
+  verificacoes       VerificacaoOportunidade[]
+  favoritos          Favorito[]
+  candidaturas       Candidatura[]
+
+  @@index([estadoEditorial])
+  @@index([prazoCandidatura])
+  @@index([tipoOportunidadeId])
+  @@index([paisDestinoCodigo])
+  @@index([titulo])
+  @@map("oportunidades")
+}
+
+model OportunidadeCategoria {
+  oportunidadeId String @map("oportunidade_id") @db.Uuid
+  categoriaId    String @map("categoria_id") @db.Uuid
+
+  oportunidade Oportunidade    @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+  categoria    CategoriaEstudo @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@id([oportunidadeId, categoriaId])
+  @@index([categoriaId])
+  @@map("oportunidades_categorias")
+}
+
+model RegraElegibilidade {
+  id                String            @id @default(uuid()) @db.Uuid
+  oportunidadeId    String            @map("oportunidade_id") @db.Uuid
+  tipoRegra         TipoRegra         @map("tipo_regra")
+  operador          OperadorRegra
+  valorTexto        String?           @map("valor_texto") @db.Text
+  valorNumerico     Decimal?          @map("valor_numerico") @db.Decimal(10, 2)
+  valorMinimo       Decimal?          @map("valor_minimo") @db.Decimal(10, 2)
+  valorMaximo       Decimal?          @map("valor_maximo") @db.Decimal(10, 2)
+  obrigatoriedade   Obrigatoriedade   @default(OBRIGATORIA)
+  estadoConfirmacao EstadoConfirmacao @default(POR_CONFIRMAR) @map("estado_confirmacao")
+  textoFonte        String            @map("texto_fonte") @db.Text
+  urlFonte          String            @map("url_fonte") @db.Text
+  ordemExibicao     Int               @default(0) @map("ordem_exibicao")
+
+  oportunidade Oportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+
+  @@index([oportunidadeId])
+  @@map("regras_elegibilidade")
+}
+
+model ElegibilidadePais {
+  id             String                 @id @default(uuid()) @db.Uuid
+  oportunidadeId String                 @map("oportunidade_id") @db.Uuid
+  codigoPais     String                 @map("codigo_pais") @db.Char(2)
+  tipoCriterio   TipoCriterio           @map("tipo_criterio")
+  resultado      ResultadoElegibilidade @default(POR_CONFIRMAR)
+  observacoes    String?                @db.Text
+
+  oportunidade Oportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+
+  @@unique([oportunidadeId, codigoPais, tipoCriterio])
+  @@index([codigoPais, resultado])
+  @@map("elegibilidades_pais")
+}
+
+model DocumentoExigido {
+  id                String            @id @default(uuid()) @db.Uuid
+  oportunidadeId    String            @map("oportunidade_id") @db.Uuid
+  nome              String            @db.VarChar(150)
+  descricao         String?           @db.Text
+  obrigatorio       Boolean           @default(true)
+  estadoConfirmacao EstadoConfirmacao @default(POR_CONFIRMAR) @map("estado_confirmacao")
+  urlFonte          String?           @map("url_fonte") @db.Text
+
+  oportunidade Oportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+
+  @@index([oportunidadeId])
+  @@map("documentos_exigidos")
+}
+
+model VerificacaoOportunidade {
+  id              String            @id @default(uuid()) @db.Uuid
+  oportunidadeId  String            @map("oportunidade_id") @db.Uuid
+  administradorId String            @map("administrador_id") @db.Uuid
+  estado          EstadoVerificacao @default(PENDENTE)
+  verificadaEm    DateTime?         @map("verificada_em") @db.Timestamptz
+  urlConsultada   String            @map("url_consultada") @db.Text
+  notas           String?           @db.Text
+
+  oportunidade  Oportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+  administrador Utilizador   @relation(fields: [administradorId], references: [id], onDelete: Restrict)
+
+  @@index([oportunidadeId])
+  @@map("verificacoes_oportunidade")
+}
+
+// ---------------- FAVORITOS E CANDIDATURAS ----------------
+
+model Favorito {
+  utilizadorId   String   @map("utilizador_id") @db.Uuid
+  oportunidadeId String   @map("oportunidade_id") @db.Uuid
+  criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  utilizador   Utilizador   @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+  oportunidade Oportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+
+  @@id([utilizadorId, oportunidadeId])
+  @@index([oportunidadeId])
+  @@map("favoritos")
+}
+
+model Candidatura {
+  id                   String            @id @default(uuid()) @db.Uuid
+  utilizadorId         String            @map("utilizador_id") @db.Uuid
+  oportunidadeId       String            @map("oportunidade_id") @db.Uuid
+  estado               EstadoCandidatura @default(PLANEADA)
+  notasPrivadas        String?           @map("notas_privadas") @db.Text
+  dataSubmissaoExterna DateTime?         @map("data_submissao_externa") @db.Date
+  criadoEm             DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm         DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  utilizador   Utilizador             @relation(fields: [utilizadorId], references: [id], onDelete: Restrict)
+  oportunidade Oportunidade           @relation(fields: [oportunidadeId], references: [id], onDelete: Restrict)
+  historico    HistoricoCandidatura[]
+
+  // RF-24 (uma candidatura ativa por utilizador+oportunidade) vai como
+  // índice único parcial em SQL na migração, no passo seguinte.
+  @@index([utilizadorId, estado])
+  @@index([oportunidadeId])
+  @@map("candidaturas")
+}
+
+model HistoricoCandidatura {
+  id             String             @id @default(uuid()) @db.Uuid
+  candidaturaId  String             @map("candidatura_id") @db.Uuid
+  estadoAnterior EstadoCandidatura? @map("estado_anterior")
+  estadoNovo     EstadoCandidatura  @map("estado_novo")
+  alteradoPorId  String             @map("alterado_por_id") @db.Uuid
+  alteradoEm     DateTime           @default(now()) @map("alterado_em") @db.Timestamptz
+  observacao     String?            @db.Text
+
+  candidatura Candidatura @relation(fields: [candidaturaId], references: [id], onDelete: Cascade)
+  alteradoPor Utilizador  @relation(fields: [alteradoPorId], references: [id], onDelete: Restrict)
+
+  @@index([candidaturaId, alteradoEm])
+  @@map("historico_candidaturas")
+}
+
+// ---------------- AUDITORIA ----------------
+
+model RegistoAuditoria {
+  id               String   @id @default(uuid()) @db.Uuid
+  atorUtilizadorId String?  @map("ator_utilizador_id") @db.Uuid
+  acao             String   @db.VarChar(80)
+  tipoEntidade     String   @map("tipo_entidade") @db.VarChar(80)
+  entidadeId       String?  @map("entidade_id") @db.Uuid
+  detalhesMinimos  Json?    @map("detalhes_minimos") @db.JsonB
+  enderecoIp       String?  @map("endereco_ip") @db.Inet
+  criadoEm         DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  ator Utilizador? @relation(fields: [atorUtilizadorId], references: [id], onDelete: SetNull)
+
+  @@index([tipoEntidade, entidadeId])
+  @@index([atorUtilizadorId])
+  @@index([criadoEm])
+  @@map("registos_auditoria")
+}
+
+// ---------------- MENTORIA E PAGAMENTOS ----------------
+
+enum TipoServicoMentoria {
+  GERAL
+  PERSONALIZADA
+}
+
+enum EstadoAgendamento {
+  PENDENTE_PAGAMENTO
+  CONFIRMADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum EstadoPagamento {
+  PENDENTE
+  CONFIRMADO
+  FALHADO
+  REEMBOLSADO
+}
+
+enum EstadoAcesso {
+  ATIVO
+  REVOGADO
+}
+
+enum PapelMensagem {
+  UTILIZADOR
+  ASSISTENTE
+}
+
+model Mentor {
+  id                String            @id @default(uuid()) @db.Uuid
+  utilizadorId      String            @unique @map("utilizador_id") @db.Uuid
+  biografia         String            @db.Text
+  especialidades    String[]
+  estadoVerificacao EstadoVerificacao @default(PENDENTE) @map("estado_verificacao")
+  criadoEm          DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm      DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  utilizador   Utilizador            @relation(fields: [utilizadorId], references: [id], onDelete: Restrict)
+  servicos     ServicoMentoria[]
+  agendamentos AgendamentoMentoria[]
+
+  @@map("mentores")
+}
+
+// GERAL = conteudo interativo + IA (sem mentor). PERSONALIZADA = sessao com mentor real.
+model ServicoMentoria {
+  id             String              @id @default(uuid()) @db.Uuid
+  mentorId       String?             @map("mentor_id") @db.Uuid
+  tipo           TipoServicoMentoria
+  titulo         String              @db.VarChar(200)
+  descricao      String              @db.Text
+  duracaoMinutos Int?                @map("duracao_minutos")
+  validadeDias   Int?                @map("validade_dias")
+  preco          Decimal             @db.Decimal(14, 2)
+  moeda          String              @db.Char(3)
+  ativo          Boolean             @default(true)
+  criadoEm       DateTime            @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm   DateTime            @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  mentor       Mentor?               @relation(fields: [mentorId], references: [id], onDelete: Restrict)
+  agendamentos AgendamentoMentoria[]
+  pagamentos   Pagamento[]
+  acessos      AcessoServico[]
+
+  @@index([tipo, ativo])
+  @@index([mentorId])
+  @@map("servicos_mentoria")
+}
+
+model AgendamentoMentoria {
+  id                 String            @id @default(uuid()) @db.Uuid
+  servicoId          String            @map("servico_id") @db.Uuid
+  mentorId           String            @map("mentor_id") @db.Uuid
+  candidatoId        String            @map("candidato_id") @db.Uuid
+  inicio             DateTime          @db.Timestamptz
+  fim                DateTime          @db.Timestamptz
+  estado             EstadoAgendamento @default(PENDENTE_PAGAMENTO)
+  expiraEm           DateTime?         @map("expira_em") @db.Timestamptz
+  linkReuniao        String?           @map("link_reuniao") @db.Text
+  eventoExternoId    String?           @map("evento_externo_id") @db.VarChar(255)
+  motivoCancelamento String?           @map("motivo_cancelamento") @db.Text
+  criadoEm           DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm       DateTime          @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  servico    ServicoMentoria @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  mentor     Mentor          @relation(fields: [mentorId], references: [id], onDelete: Restrict)
+  candidato  Utilizador      @relation(fields: [candidatoId], references: [id], onDelete: Restrict)
+  pagamentos Pagamento[]
+
+  // Anti-sobreposicao de horarios do mesmo mentor: restricao EXCLUDE em SQL na migracao.
+  @@index([candidatoId, estado])
+  @@index([mentorId, inicio])
+  @@index([estado, expiraEm])
+  @@map("agendamentos_mentoria")
+}
+
+model Pagamento {
+  id                String          @id @default(uuid()) @db.Uuid
+  utilizadorId      String          @map("utilizador_id") @db.Uuid
+  servicoId         String          @map("servico_id") @db.Uuid
+  agendamentoId     String?         @map("agendamento_id") @db.Uuid
+  fornecedor        String          @db.VarChar(50)
+  referenciaExterna String?         @map("referencia_externa") @db.VarChar(150)
+  valor             Decimal         @db.Decimal(14, 2)
+  moeda             String          @db.Char(3)
+  estado            EstadoPagamento @default(PENDENTE)
+  confirmadoEm      DateTime?       @map("confirmado_em") @db.Timestamptz
+  criadoEm          DateTime        @default(now()) @map("criado_em") @db.Timestamptz
+
+  utilizador  Utilizador           @relation(fields: [utilizadorId], references: [id], onDelete: Restrict)
+  servico     ServicoMentoria      @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  agendamento AgendamentoMentoria? @relation(fields: [agendamentoId], references: [id], onDelete: Restrict)
+  eventos     EventoPagamento[]
+  acesso      AcessoServico?
+
+  @@unique([fornecedor, referenciaExterna])
+  @@index([utilizadorId])
+  @@index([agendamentoId])
+  @@map("pagamentos")
+}
+
+// Registo dos avisos (webhooks) do fornecedor. O unico garante idempotencia.
+model EventoPagamento {
+  id              String    @id @default(uuid()) @db.Uuid
+  fornecedor      String    @db.VarChar(50)
+  eventoExternoId String    @map("evento_externo_id") @db.VarChar(150)
+  tipo            String    @db.VarChar(80)
+  pagamentoId     String?   @map("pagamento_id") @db.Uuid
+  payload         Json      @db.JsonB
+  recebidoEm      DateTime  @default(now()) @map("recebido_em") @db.Timestamptz
+  processadoEm    DateTime? @map("processado_em") @db.Timestamptz
+
+  pagamento Pagamento? @relation(fields: [pagamentoId], references: [id], onDelete: SetNull)
+
+  @@unique([fornecedor, eventoExternoId])
+  @@index([pagamentoId])
+  @@map("eventos_pagamento")
+}
+
+// Acesso pago a um servico (mentoria geral). Nasce quando o pagamento e confirmado no servidor.
+model AcessoServico {
+  id           String       @id @default(uuid()) @db.Uuid
+  utilizadorId String       @map("utilizador_id") @db.Uuid
+  servicoId    String       @map("servico_id") @db.Uuid
+  pagamentoId  String       @unique @map("pagamento_id") @db.Uuid
+  estado       EstadoAcesso @default(ATIVO)
+  inicioEm     DateTime     @default(now()) @map("inicio_em") @db.Timestamptz
+  expiraEm     DateTime?    @map("expira_em") @db.Timestamptz
+
+  utilizador Utilizador      @relation(fields: [utilizadorId], references: [id], onDelete: Restrict)
+  servico    ServicoMentoria @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  pagamento  Pagamento       @relation(fields: [pagamentoId], references: [id], onDelete: Restrict)
+  conversas  ConversaIA[]
+
+  @@index([utilizadorId, servicoId, estado])
+  @@map("acessos_servico")
+}
+
+model ConversaIA {
+  id           String   @id @default(uuid()) @db.Uuid
+  utilizadorId String   @map("utilizador_id") @db.Uuid
+  acessoId     String   @map("acesso_id") @db.Uuid
+  titulo       String?  @db.VarChar(200)
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm DateTime @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  utilizador Utilizador    @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+  acesso     AcessoServico @relation(fields: [acessoId], references: [id], onDelete: Restrict)
+  mensagens  MensagemIA[]
+
+  @@index([utilizadorId, atualizadoEm])
+  @@map("conversas_ia")
+}
+
+model MensagemIA {
+  id         String        @id @default(uuid()) @db.Uuid
+  conversaId String        @map("conversa_id") @db.Uuid
+  papel      PapelMensagem
+  conteudo   String        @db.Text
+  criadoEm   DateTime      @default(now()) @map("criado_em") @db.Timestamptz
+
+  conversa ConversaIA @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  @@index([conversaId, criadoEm])
+  @@map("mensagens_ia")
+}
