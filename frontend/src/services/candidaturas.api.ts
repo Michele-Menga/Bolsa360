@@ -1,19 +1,25 @@
 import { apiFetch } from './api';
 
-export async function listarCandidaturas() {
-  return apiFetch<{ data: any[] }>('/candidaturas', { method: 'GET' });
+export interface Candidatura {
+  id: string;
+  oportunidade_id: string;
+  estado: string;
+  data_candidatura: string;
+  oportunidades?: {
+    titulo?: string;
+    instituicao?: string;
+  };
 }
 
-export async function criarCandidatura(oportunidadeId: string) {
-  return apiFetch<{ data: any }>('/candidaturas', {
+// Listar todas as candidaturas do candidato autenticado
+export async function obterMinhasCandidaturas() {
+  return apiFetch<{ data: Candidatura[] }>('/candidaturas/me', { method: 'GET' });
+}
+
+// Submeter uma nova candidatura
+export async function submeterCandidatura(oportunidadeId: string) {
+  return apiFetch<{ data: Candidatura }>('/candidaturas', {
     method: 'POST',
-    body: JSON.stringify({ oportunidadeId }),
-  });
-}
-
-export async function atualizarEstadoCandidatura(id: string, estado: string, notas?: string) {
-  return apiFetch<{ data: any }>(`/candidaturas/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ estado, notasPrivadas: notas }),
+    body: JSON.stringify({ oportunidade_id: oportunidadeId }),
   });
 }

@@ -1,7 +1,16 @@
 import { apiFetch } from './api';
 
-export async function listarFavoritos() {
-  return apiFetch<{ data: any[] }>('/favoritos', { method: 'GET' });
+export interface Favorito {
+  id: string;
+  oportunidade_id: string;
+  oportunidades?: {
+    titulo?: string;
+    instituicao?: string;
+  };
+}
+
+export async function obterFavoritos() {
+  return apiFetch<{ data: Favorito[] }>('/favoritos', { method: 'GET' });
 }
 
 export async function adicionarFavorito(oportunidadeId: string) {
