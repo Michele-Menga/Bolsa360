@@ -15,7 +15,7 @@ export function LoginPage() {
     setCarregando(true);
 
     try {
-      await login({ email, palavra_passe: palavraPasse });
+      await login({ email, palavraPasse: palavraPasse });
       // Se o login der certo, redireciona para o catálogo de oportunidades
       navigate('/oportunidades');
     } catch (err: any) {

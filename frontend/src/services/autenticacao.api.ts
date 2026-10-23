@@ -2,13 +2,13 @@ import { apiFetch } from './api';
 
 export interface LoginDados {
   email: string;
-  palavra_passe: string;
+  palavraPasse: string;
 }
 
 export interface RegistoDados {
   nome: string;
   email: string;
-  palavra_passe: string;
+  palavraPasse: string;
 }
 
 export interface Utilizador {
@@ -22,7 +22,10 @@ export interface Utilizador {
 export async function login(dados: LoginDados) {
   return apiFetch<{ data: Utilizador }>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify(dados),
+    body: JSON.stringify({
+      email: dados.email,
+      palavraPasse: dados.palavraPasse,
+    }),
   });
 }
 
@@ -30,7 +33,11 @@ export async function login(dados: LoginDados) {
 export async function registar(dados: RegistoDados) {
   return apiFetch<{ data: Utilizador }>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify(dados),
+    body: JSON.stringify({
+      nome: dados.nome,
+      email: dados.email,
+      palavraPasse: dados.palavraPasse,
+    }),
   });
 }
 
