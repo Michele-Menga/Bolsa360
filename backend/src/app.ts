@@ -11,6 +11,7 @@ import { administracaoRouter } from "./modules/administracao/administracao.route
 import { perfisRouter } from "./modules/perfis/perfis.routes";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes";
 import { candidaturasRouter } from "./modules/candidaturas/candidaturas.routes";
+import { referenciasRouter } from "./modules/referencias/referencias.routes";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/api/v1/saude", (_req, res) => {
 
 app.use("/api/v1/auth", autenticacaoRouter);
 app.use("/api/v1/oportunidades", oportunidadesRouter);
+app.use("/api/v1/referencias", referenciasRouter);
 app.use("/api/v1/admin", administracaoRouter);
 app.use("/api/v1/perfis", perfisRouter);
 app.use("/api/v1/favoritos", favoritosRouter);

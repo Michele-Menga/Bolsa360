@@ -1,7 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import type { TipoFinanciamento, ResultadoElegibilidade } from '@prisma/client';
+import { calcularEstadoPrazo, inicioDoDiaUTC, type EstadoPrazo } from '../../shared/utils/prazo';
 
-export type EstadoPrazo = 'FUTURO' | 'ABERTO' | 'EXPIRADO' | 'SEM_PRAZO_CONFIRMADO';
+export type { EstadoPrazo };
 
 export type FiltrosOportunidades = {
   q?: string;
@@ -20,24 +21,11 @@ export type FiltrosOportunidades = {
 const LIMITE_MAXIMO = 50;
 const LIMITE_PADRAO = 10;
 
-function inicioDoDia(d: Date = new Date()): Date {
-  return new Date(d.toISOString().slice(0, 10));
-}
-
-// O estado do prazo nunca e guardado: deriva das datas (documento, secao 11.5).
-export function calcularEstadoPrazo(
-  o: { dataAbertura: Date | null; prazoCandidatura: Date | null },
-  hoje: Date = inicioDoDia(),
-): EstadoPrazo {
-  if (!o.prazoCandidatura) return 'SEM_PRAZO_CONFIRMADO';
-  if (o.prazoCandidatura < hoje) return 'EXPIRADO';
-  if (o.dataAbertura && o.dataAbertura > hoje) return 'FUTURO';
-  return 'ABERTO';
-}
-
+// O estado do prazo deriva das datas e vive em shared/utils/prazo.ts.
+// Os filtros abaixo TÊM de refletir a mesma ordem de regras dessa função.
 export function construirWhere(
   f: FiltrosOportunidades,
-  hoje: Date = inicioDoDia(),
+  hoje: Date = inicioDoDiaUTC(),
 ): Prisma.OportunidadeWhereInput {
   const and: Prisma.OportunidadeWhereInput[] = [{ estadoEditorial: 'PUBLICADA' }]; // RN-01
 
@@ -118,7 +106,7 @@ export async function listarOportunidadesPublicas(
   prisma: PrismaClient,
   filtros: FiltrosOportunidades = {},
 ) {
-  const hoje = inicioDoDia();
+  const hoje = inicioDoDiaUTC();
   const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1));
   const limite = Math.min(LIMITE_MAXIMO, Math.max(1, Math.trunc(filtros.limite ?? LIMITE_PADRAO)));
   const where = construirWhere(filtros, hoje);
@@ -141,7 +129,7 @@ export async function listarOportunidadesPublicas(
 
   const data = linhas.map(({ paisesElegiveis, ...o }) => ({
     ...o,
-    estadoPrazo: calcularEstadoPrazo(o, hoje),
+    estadoPrazo: calcularEstadoPrazo(o.dataAbertura, o.prazoCandidatura, hoje),
     elegibilidadeAngolanos: paisesElegiveis[0]?.resultado ?? 'POR_CONFIRMAR',
   }));
 

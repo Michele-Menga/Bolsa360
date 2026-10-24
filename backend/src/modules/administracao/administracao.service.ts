@@ -157,10 +157,16 @@ export async function obterOportunidadeAdmin(id: string) {
     throw new AppError(404, "Oportunidade não encontrada.", "NAO_ENCONTRADA");
   }
 
+  // Registo completo: tudo o que o formulário de edição precisa para se
+  // pré-preencher (incluindo os IDs de tipo e nível, que a listagem não traz).
   return {
     ...serializar(oportunidade),
     descricao: oportunidade.descricao,
+    tipoOportunidadeId: oportunidade.tipoOportunidadeId,
+    nivelEnsinoId: oportunidade.nivelEnsinoId,
     nivelEnsino: oportunidade.nivelEnsino,
+    paisDestinoCodigo: oportunidade.paisDestinoCodigo,
+    modalidade: oportunidade.modalidade,
     categorias: oportunidade.categorias.map((c) => c.categoria),
     regras: oportunidade.regras.map((regra) => ({
       ...regra,

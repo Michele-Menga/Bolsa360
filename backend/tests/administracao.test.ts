@@ -180,3 +180,23 @@ describe("Administração de oportunidades", () => {
     expect(detalhe.status).toBe(404);
   });
 });
+
+describe("Detalhe administrativo completo", () => {
+  it("devolve descrição, tipo/nível (com IDs), país e modalidade para pré-preencher a edição", async () => {
+    const resposta = await administrador.get(`/api/v1/admin/oportunidades/${OPORTUNIDADE_1}`);
+
+    expect(resposta.status).toBe(200);
+    const o = resposta.body.data;
+    expect(typeof o.descricao).toBe("string");
+    expect(o.tipoOportunidadeId).toBe(TIPO_BOLSA_UNIVERSITARIA);
+    expect(o.nivelEnsinoId).toEqual(expect.any(String));
+    expect(o.nivelEnsino).toEqual(expect.objectContaining({ codigo: expect.any(String) }));
+    expect(o.paisDestinoCodigo).toBe("PT");
+    expect(o.modalidade).toBe("PRESENCIAL");
+  });
+
+  it("um candidato não acede ao detalhe administrativo (403)", async () => {
+    const resposta = await candidato.get(`/api/v1/admin/oportunidades/${OPORTUNIDADE_1}`);
+    expect(resposta.status).toBe(403);
+  });
+});
