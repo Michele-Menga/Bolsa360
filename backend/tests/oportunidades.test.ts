@@ -121,3 +121,44 @@ describe("Catálogo público de oportunidades", () => {
     expect(resposta.body.erro.codigo).toBe("VALIDACAO_INVALIDA");
   });
 });
+
+describe("Estado do prazo: filtro e campo nunca discordam", () => {
+  const ESTADOS = ["FUTURO", "ABERTO", "EXPIRADO", "SEM_PRAZO_CONFIRMADO"];
+
+  it.each(ESTADOS)("filtro estadoPrazo=%s só devolve itens com esse estado", async (estado) => {
+    const resposta = await request(app)
+      .get("/api/v1/oportunidades")
+      .query({ estadoPrazo: estado, limite: 50 });
+
+    expect(resposta.status).toBe(200);
+    for (const oportunidade of resposta.body.data) {
+      expect(oportunidade.estadoPrazo).toBe(estado);
+    }
+  });
+
+  it("cada oportunidade tem o mesmo estadoPrazo na listagem e no detalhe, e pertence ao filtro correspondente", async () => {
+    const lista = await request(app).get("/api/v1/oportunidades").query({ limite: 50 });
+    expect(lista.status).toBe(200);
+
+    for (const item of lista.body.data) {
+      const detalhe = await request(app).get(`/api/v1/oportunidades/${item.id}`);
+      expect(detalhe.status).toBe(200);
+      expect(detalhe.body.data.estadoPrazo).toBe(item.estadoPrazo);
+
+      const filtrada = await request(app)
+        .get("/api/v1/oportunidades")
+        .query({ estadoPrazo: item.estadoPrazo, limite: 50 });
+      expect(filtrada.body.data.map((o: { id: string }) => o.id)).toContain(item.id);
+    }
+  });
+
+  it("a soma dos quatro filtros é igual ao total do catálogo (partição completa)", async () => {
+    const total = (await request(app).get("/api/v1/oportunidades")).body.meta.total;
+    let soma = 0;
+    for (const estado of ESTADOS) {
+      const r = await request(app).get("/api/v1/oportunidades").query({ estadoPrazo: estado, limite: 1 });
+      soma += r.body.meta.total;
+    }
+    expect(soma).toBe(total);
+  });
+});
