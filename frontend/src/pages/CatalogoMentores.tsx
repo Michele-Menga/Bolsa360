@@ -245,16 +245,16 @@ export default function CatalogoMentores() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {mentores.map((m) => (
-            <Card key={m.id} className="flex flex-col justify-between space-y-4 rounded-2xl border border-line bg-white p-6 shadow-sm transition hover:shadow-md">
+            <Card key={m.id} className="group relative flex flex-col justify-between space-y-4 rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-1 hover:border-ink hover:shadow-lg">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand-dark font-bold">
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand-dark font-bold transition group-hover:bg-brand">
                       <UserRound className="h-6 w-6" />
                     </span>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <h2 className="text-lg font-bold">{m.nome}</h2>
+                        <h2 className="text-lg font-bold group-hover:underline decoration-brand decoration-4 underline-offset-4">{m.nome}</h2>
                         <BadgeCheck className="h-4 w-4 text-brand-dark" />
                       </div>
                       <p className="text-xs text-mute">{m.servicos.length} serviço(s) disponível(is)</p>
