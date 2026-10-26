@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Badge, Card, ErroCaixa, Skeleton, Vazio } from "@/components/ui/misc";
 import { PageLoader, ProcessingOverlay } from "@/components/LoadingScreens";
+import { MentoresAdmin } from "@/components/admin/MentoresAdmin";
 import { useAdminAcao, useMetricas, useOportunidadeAdmin, useOportunidadesAdmin, useReferencias } from "@/lib/queries";
 import { data, dinheiro, EDITORIAL, FINANCIAMENTO, MODALIDADE, PAISES } from "@/lib/format";
 import type { EstadoEditorial, OportunidadeAdminDetalhe } from "@/lib/types";
@@ -13,15 +14,19 @@ const TOM: Record<EstadoEditorial, "ok" | "warn" | "off" | "info" | "brand"> = {
 };
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const VAZIO = { titulo: "", entidadeFinanciadora: "", tipoOportunidadeId: "", descricao: "", nivelEnsinoId: "", paisDestinoCodigo: "", modalidade: "",
-  tipoFinanciamento: "INTEGRAL", valorFinanciamento: "", moeda: "", dataAbertura: "", prazoCandidatura: "", cicloAno: "", urlFonteOficial: "", urlCandidatura: "" };
+const VAZIO = {
+  titulo: "", entidadeFinanciadora: "", tipoOportunidadeId: "", descricao: "", nivelEnsinoId: "", paisDestinoCodigo: "", modalidade: "",
+  tipoFinanciamento: "INTEGRAL", valorFinanciamento: "", moeda: "", dataAbertura: "", prazoCandidatura: "", cicloAno: "", urlFonteOficial: "", urlCandidatura: ""
+};
 type Form = typeof VAZIO;
 // Pré-preenche a edição com o registo completo (GET /admin/oportunidades/:id): descrição, nível, país e modalidade incluídos.
-const paraForm = (o: OportunidadeAdminDetalhe): Form => ({ ...VAZIO, titulo: o.titulo, entidadeFinanciadora: o.entidadeFinanciadora,
+const paraForm = (o: OportunidadeAdminDetalhe): Form => ({
+  ...VAZIO, titulo: o.titulo, entidadeFinanciadora: o.entidadeFinanciadora,
   tipoOportunidadeId: o.tipoOportunidadeId, descricao: o.descricao, nivelEnsinoId: o.nivelEnsinoId ?? "", paisDestinoCodigo: o.paisDestinoCodigo ?? "",
   modalidade: o.modalidade ?? "", tipoFinanciamento: o.tipoFinanciamento,
   valorFinanciamento: o.valorFinanciamento ?? "", moeda: o.moeda ?? "", dataAbertura: o.dataAbertura?.slice(0, 10) ?? "", prazoCandidatura: o.prazoCandidatura?.slice(0, 10) ?? "",
-  cicloAno: o.cicloAno ?? "", urlFonteOficial: o.urlFonteOficial, urlCandidatura: o.urlCandidatura ?? "" });
+  cicloAno: o.cicloAno ?? "", urlFonteOficial: o.urlFonteOficial, urlCandidatura: o.urlCandidatura ?? ""
+});
 
 function Formulario({ inicial, id, onFechar, onGuardado }: { inicial: Form; id?: string; onFechar: () => void; onGuardado: (msg: string) => void }) {
   const acao = useAdminAcao();
@@ -132,23 +137,25 @@ export default function Admin() {
 
       {lista.error ? <ErroCaixa erro={lista.error} /> : lista.isLoading ? <div className="space-y-3">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-20" />)}</div>
         : !lista.data!.data.length ? <Vazio titulo="Sem oportunidades neste filtro" /> : (
-        <ul className="space-y-3">{lista.data!.data.map((o) => (
-          <Card key={o.id} className="flex flex-wrap items-center gap-4 p-4">
-            <div className="min-w-0 flex-1"><p className="truncate font-semibold">{o.titulo}</p>
-              <p className="truncate text-sm text-mute">{o.entidadeFinanciadora} · {o.tipo.nome} · {dinheiro(o.valorFinanciamento, o.moeda)} · prazo {data(o.prazoCandidatura)}</p></div>
-            <Badge tom={TOM[o.estadoEditorial]}>{EDITORIAL[o.estadoEditorial]}</Badge>
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" aria-label={`Editar ${o.titulo}`} onClick={() => setForm({ id: o.id })}><Pencil className="h-4 w-4" /></Button>
-              {o.estadoEditorial !== "PUBLICADA" && o.estadoEditorial !== "ARQUIVADA" && <Button size="sm" onClick={() => executar("A publicar oportunidade…", () => acao.publicar.mutateAsync(o.id))}><Send className="h-4 w-4" />Publicar</Button>}
-              {o.estadoEditorial === "PUBLICADA" && <Button size="sm" variant="outline" onClick={() => executar("A arquivar oportunidade…", () => acao.arquivar.mutateAsync(o.id))}><Archive className="h-4 w-4" />Arquivar</Button>}
-            </div>
-          </Card>))}</ul>)}
+          <ul className="space-y-3">{lista.data!.data.map((o) => (
+            <Card key={o.id} className="flex flex-wrap items-center gap-4 p-4">
+              <div className="min-w-0 flex-1"><p className="truncate font-semibold">{o.titulo}</p>
+                <p className="truncate text-sm text-mute">{o.entidadeFinanciadora} · {o.tipo.nome} · {dinheiro(o.valorFinanciamento, o.moeda)} · prazo {data(o.prazoCandidatura)}</p></div>
+              <Badge tom={TOM[o.estadoEditorial]}>{EDITORIAL[o.estadoEditorial]}</Badge>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" aria-label={`Editar ${o.titulo}`} onClick={() => setForm({ id: o.id })}><Pencil className="h-4 w-4" /></Button>
+                {o.estadoEditorial !== "PUBLICADA" && o.estadoEditorial !== "ARQUIVADA" && <Button size="sm" onClick={() => executar("A publicar oportunidade…", () => acao.publicar.mutateAsync(o.id))}><Send className="h-4 w-4" />Publicar</Button>}
+                {o.estadoEditorial === "PUBLICADA" && <Button size="sm" variant="outline" onClick={() => executar("A arquivar oportunidade…", () => acao.arquivar.mutateAsync(o.id))}><Archive className="h-4 w-4" />Arquivar</Button>}
+              </div>
+            </Card>))}</ul>)}
 
       {lista.data && lista.data.meta.totalPaginas > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3 text-sm">
           <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)}>Anterior</Button>
           <span className="text-mute">Página {pagina} de {lista.data.meta.totalPaginas}</span>
           <Button size="sm" variant="outline" disabled={pagina >= lista.data.meta.totalPaginas} onClick={() => setPagina(pagina + 1)}>Seguinte</Button></div>)}
+
+      <MentoresAdmin />
     </div>
   );
 }

@@ -12,6 +12,8 @@ const Entrar = lazy(() => import("@/pages/Entrar"));
 const Painel = lazy(() => import("@/pages/Painel"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const NaoEncontrada = lazy(() => import("@/pages/NaoEncontrada"));
+const Mentor = lazy(() => import("@/pages/Mentor"));
+const CatalogoMentores = lazy(() => import("@/pages/CatalogoMentores"));
 
 export default function App() {
   const { booting } = useAuth();
@@ -27,9 +29,11 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="oportunidades" element={<Catalogo />} />
           <Route path="oportunidades/:id" element={<Detalhe />} />
+          <Route path="mentores" element={<CatalogoMentores />} />
           <Route path="entrar" element={<Entrar modo="login" />} />
           <Route path="registar" element={<Entrar modo="registo" />} />
           <Route element={<RequireAuth papel="CANDIDATO" />}><Route path="painel" element={<Painel />} /></Route>
+          <Route element={<RequireAuth papel="MENTOR" />}><Route path="mentor" element={<Mentor />} /></Route>
           <Route element={<RequireAuth papel="ADMIN" />}><Route path="admin" element={<Admin />} /></Route>
           <Route path="*" element={<NaoEncontrada />} />
         </Route>
