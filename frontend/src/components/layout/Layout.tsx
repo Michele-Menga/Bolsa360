@@ -37,7 +37,7 @@ export function Layout() {
           <Marca />
           <nav className="hidden items-center gap-1 md:flex" aria-label="Principal">
             <NavLink to="/oportunidades" className={link}>Oportunidades</NavLink>
-            {user?.papel !== "ADMIN" && <NavLink to="/mentores" className={link}>Mentores</NavLink>}
+            {(!user || user.papel === "CANDIDATO") && <NavLink to="/mentores" className={link}>Mentores</NavLink>}
             {user?.papel === "CANDIDATO" && <NavLink to="/painel" className={link}>O meu painel</NavLink>}
             {user?.papel === "MENTOR" && <NavLink to="/mentor" className={link}>Área do mentor</NavLink>}
             {user?.papel === "ADMIN" && <NavLink to="/admin" className={link}>Administração</NavLink>}
@@ -65,7 +65,7 @@ export function Layout() {
           <div className="border-t border-line bg-white px-4 py-3 md:hidden animate-fade" onClick={() => setAberto(false)}>
             <div className="flex flex-col gap-1">
               <NavLink to="/oportunidades" className={link}>Oportunidades</NavLink>
-              {user?.papel !== "ADMIN" && <NavLink to="/mentores" className={link}>Mentores</NavLink>}
+              {(!user || user.papel === "CANDIDATO") && <NavLink to="/mentores" className={link}>Mentores</NavLink>}
               {user?.papel === "CANDIDATO" && <NavLink to="/painel" className={link}>O meu painel</NavLink>}
               {user?.papel === "MENTOR" && <NavLink to="/mentor" className={link}>Área do mentor</NavLink>}
               {user?.papel === "ADMIN" && <NavLink to="/admin" className={link}>Administração</NavLink>}

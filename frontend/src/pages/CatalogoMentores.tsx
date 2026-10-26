@@ -121,6 +121,9 @@ export default function CatalogoMentores() {
   if (user?.papel === "ADMIN") {
     return <Navigate to="/admin" replace />;
   }
+  if (user?.papel === "MENTOR") {
+    return <Navigate to="/mentor" replace />;
+  }
 
   const nav = useNavigate();
   const [pesquisa, setPesquisa] = useState("");
