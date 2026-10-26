@@ -26,7 +26,16 @@ export async function registar(dados: RegistoInput): Promise<UtilizadorPublico> 
 
   try {
     return await prisma.utilizador.create({
-      data: { nome: dados.nome, email, palavraPasseHash },
+      data: {
+        nome: dados.nome,
+        email,
+        palavraPasseHash,
+        papel: dados.papel,
+        // Mentor nasce com o registo de mentor em verificação (PENDENTE por omissão no schema).
+        ...(dados.papel === "MENTOR" && {
+          mentor: { create: { biografia: dados.biografia ?? "", especialidades: dados.especialidades ?? [] } },
+        }),
+      },
       select: { id: true, nome: true, email: true, papel: true },
     });
   } catch (erro) {

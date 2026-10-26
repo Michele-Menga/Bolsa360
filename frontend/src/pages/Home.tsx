@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, BadgeCheck, BookMarked, Search, SlidersHorizontal } from "lucide-react";
-import { OrbitLogo } from "@/components/brand/Bolsa360Logos";
+import { OrbitLogo, BookLogo } from "@/components/brand/Bolsa360Logos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErroCaixa, Skeleton } from "@/components/ui/misc";
 import { OportunidadeCard } from "@/components/OportunidadeCard";
 import { useOportunidades, useReferencias } from "@/lib/queries";
+import { useAuth } from "@/auth/AuthContext";
 
 export default function Home() {
   const nav = useNavigate();
+  const { user } = useAuth();
+  const eCandidato = user?.papel === "CANDIDATO";
   const [q, setQ] = useState("");
   const abertas = useOportunidades({ estadoPrazo: "ABERTO", limite: "3", ordenar: "prazo" });
   const total = useOportunidades({ limite: "1" });
@@ -36,7 +39,13 @@ export default function Home() {
               ))}
             </dl>
           </div>
-          <div className="hidden justify-self-center md:block"><OrbitLogo size={340} theme="dark" mode="draw" title="Símbolo Bolsa360" /></div>
+          <div className="hidden justify-self-center md:block">
+            {eCandidato ? (
+              <BookLogo size={340} theme="dark" title="Símbolo Bolsa360 — Livro de Oportunidades" />
+            ) : (
+              <OrbitLogo size={340} theme="dark" mode="draw" title="Símbolo Bolsa360" />
+            )}
+          </div>
         </div>
       </section>
 

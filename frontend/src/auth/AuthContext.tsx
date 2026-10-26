@@ -3,11 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, definirAoPerderSessao } from "@/lib/api";
 import type { Utilizador } from "@/lib/types";
 
+export type RegistoExtra = { papel?: "CANDIDATO" | "MENTOR"; biografia?: string; especialidades?: string[] };
+
 type Ctx = {
   user: Utilizador | null;
   booting: boolean;
   login: (email: string, palavraPasse: string) => Promise<Utilizador>;
-  register: (nome: string, email: string, palavraPasse: string) => Promise<Utilizador>;
+  register: (nome: string, email: string, palavraPasse: string, extra?: RegistoExtra) => Promise<Utilizador>;
   logout: () => Promise<void>;
 };
 const AuthCtx = createContext<Ctx | null>(null);
@@ -41,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const r = await api.post<{ data: Utilizador }>("/auth/login", { email, palavraPasse });
     qc.clear(); setUser(r.data); return r.data;
   }, [qc]);
-  const register = useCallback(async (nome: string, email: string, palavraPasse: string) => {
-    const r = await api.post<{ data: Utilizador }>("/auth/register", { nome, email, palavraPasse });
+  const register = useCallback(async (nome: string, email: string, palavraPasse: string, extra: RegistoExtra = {}) => {
+    const r = await api.post<{ data: Utilizador }>("/auth/register", { nome, email, palavraPasse, ...extra });
     qc.clear(); setUser(r.data); return r.data;
   }, [qc]);
   const logout = useCallback(async () => { try { await api.post("/auth/logout"); } finally { qc.clear(); setUser(null); } }, [qc]);

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Check, ChevronDown, Heart, UserRound, ClipboardList } from "lucide-react";
+import { Check, ChevronDown, Heart, UserRound, ClipboardList, Video, ExternalLink, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Badge, Card, ErroCaixa, Skeleton, Vazio } from "@/components/ui/misc";
@@ -8,9 +8,14 @@ import { OportunidadeCard } from "@/components/OportunidadeCard";
 import { PageLoader } from "@/components/LoadingScreens";
 import { useAuth } from "@/auth/AuthContext";
 import { useAtualizarCandidatura, useCandidatura, useCandidaturas, useFavoritos, useGuardarPerfil, usePerfil, useReferencias } from "@/lib/queries";
-import { CANDIDATURA, data, PAISES } from "@/lib/format";
+import { CANDIDATURA, data, dinheiro, PAISES } from "@/lib/format";
+import { SESSAO, useMinhasMentorias, useCandidatoMentoriaAcoes, type AgendamentoCandidato, type EstadoAgendamento } from "@/lib/mentor";
 import type { Candidatura, EstadoCandidatura } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const SESSAO_TOM: Record<EstadoAgendamento, "ok" | "warn" | "off" | "brand"> = {
+  PENDENTE_PAGAMENTO: "warn", CONFIRMADO: "ok", CONCLUIDO: "brand", CANCELADO: "off",
+};
 
 const ESTADOS = Object.keys(CANDIDATURA) as EstadoCandidatura[];
 const TOM: Record<EstadoCandidatura, "ok" | "warn" | "off" | "info" | "brand"> = {
@@ -131,7 +136,134 @@ function Perfil() {
   );
 }
 
-const TABS = [["candidaturas", "Candidaturas", ClipboardList], ["favoritos", "Favoritos", Heart], ["perfil", "Perfil", UserRound]] as const;
+function SessaoEstudanteCard({ s }: { s: AgendamentoCandidato }) {
+  const { cancelar } = useCandidatoMentoriaAcoes();
+  const [aCancelar, setACancelar] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const quando = new Date(s.inicio).toLocaleString("pt-AO", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <Card className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-base">{s.servico.titulo}</p>
+          <p className="text-sm text-mute">com o mentor <b>{s.mentor.nome}</b> · {quando}{s.servico.duracaoMinutos ? ` · ${s.servico.duracaoMinutos} min` : ""}</p>
+        </div>
+        <Badge tom={SESSAO_TOM[s.estado]}>{SESSAO[s.estado]}</Badge>
+      </div>
+
+      {s.estado === "PENDENTE_PAGAMENTO" && (
+        <div className="rounded-xl border border-brand/30 bg-brand-soft/30 p-3 text-sm">
+          <p className="font-medium text-ink">Solicitação enviada ao mentor</p>
+          <p className="mt-0.5 text-xs text-mute">
+            O mentor <b>{s.mentor.nome}</b> irá rever a tua solicitação e decidir se aceita. Assim que aceitar, o link da videochamada ficará disponível aqui.
+          </p>
+          {!aCancelar && (
+            <div className="mt-2.5">
+              <Button size="sm" variant="outline" onClick={() => setACancelar(true)}>
+                Cancelar solicitação
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {s.estado === "CONFIRMADO" && (
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          {s.linkReuniao ? (
+            <a href={s.linkReuniao} target="_blank" rel="noreferrer">
+              <Button size="sm">
+                <Video className="h-4 w-4" />Entrar na videochamada<ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            </a>
+          ) : (
+            <span className="text-xs text-mute">O link da videochamada está a ser gerado.</span>
+          )}
+          {!aCancelar && (
+            <Button size="sm" variant="ghost" onClick={() => setACancelar(true)}>
+              Cancelar sessão
+            </Button>
+          )}
+        </div>
+      )}
+
+      {aCancelar && (
+        <form
+          className="space-y-2 rounded-xl bg-line/20 p-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await cancelar.mutateAsync({ id: s.id, motivo: motivo.trim() });
+            setACancelar(false);
+          }}
+        >
+          <Field label="Motivo do cancelamento">
+            {(id) => (
+              <Input
+                id={id}
+                required
+                maxLength={200}
+                placeholder="Ex.: Não terei disponibilidade neste horário"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+              />
+            )}
+          </Field>
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" variant="danger" loading={cancelar.isPending}>Confirmar cancelamento</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setACancelar(false)}>Voltar</Button>
+          </div>
+        </form>
+      )}
+
+      {s.estado === "CANCELADO" && s.motivoCancelamento && (
+        <p className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+          <b>Motivo:</b> {s.motivoCancelamento}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function Mentorias() {
+  const { data: sessoes, isLoading, error } = useMinhasMentorias();
+  if (error) return <ErroCaixa erro={error} />;
+  if (isLoading) return <div className="space-y-3">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>;
+  if (!sessoes?.length) {
+    return (
+      <Vazio
+        titulo="Ainda não agendaste nenhuma mentoria"
+        texto="Conecta-te com mentores para rever a tua candidatura ou simular entrevistas."
+      >
+        <Link to="/mentores">
+          <Button variant="dark" className="mt-3">
+            <Calendar className="h-4 w-4" />Explorar mentores
+          </Button>
+        </Link>
+      </Vazio>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Link to="/mentores">
+          <Button size="sm" variant="outline"><Calendar className="h-4 w-4" />Agendar nova mentoria</Button>
+        </Link>
+      </div>
+      <div className="space-y-3">
+        {sessoes.map((s) => (
+          <SessaoEstudanteCard key={s.id} s={s} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const TABS = [
+  ["candidaturas", "Candidaturas", ClipboardList],
+  ["mentorias", "As minhas mentorias", Video],
+  ["favoritos", "Favoritos", Heart],
+  ["perfil", "Perfil", UserRound],
+] as const;
 
 export default function Painel() {
   const { user } = useAuth();
@@ -140,13 +272,15 @@ export default function Painel() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="text-3xl font-bold">Olá, {user?.nome.split(" ")[0]} <span className="text-brand">👋</span></h1>
-      <p className="mb-6 text-mute">Acompanha as tuas candidaturas e oportunidades guardadas.</p>
+      <p className="mb-6 text-mute">Acompanha as tuas candidaturas, mentorias e oportunidades guardadas.</p>
       <div role="tablist" className="mb-6 flex gap-2 overflow-x-auto">
         {TABS.map(([k, l, Icon]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setSp({ tab: k }, { replace: true })}
             className={cn("flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition", tab === k ? "bg-ink text-white" : "bg-line/60 hover:bg-line")}><Icon className="h-4 w-4" />{l}</button>))}
       </div>
-      <div role="tabpanel" className="animate-fade" key={tab}>{tab === "favoritos" ? <Favoritos /> : tab === "perfil" ? <Perfil /> : <Candidaturas />}</div>
+      <div role="tabpanel" className="animate-fade" key={tab}>
+        {tab === "favoritos" ? <Favoritos /> : tab === "perfil" ? <Perfil /> : tab === "mentorias" ? <Mentorias /> : <Candidaturas />}
+      </div>
     </div>
   );
 }

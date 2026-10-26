@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
+import { candidatoMentoriaRouter, mentorRouter, mentoresAdminRouter, mentoresPublicoRouter } from "./modules/mentoria/mentoria.routes";
 import { env } from "./config/env";
 import { notFound } from "./middlewares/not-found";
 import { errorHandler } from "./middlewares/error-handler";
@@ -30,7 +30,10 @@ app.use("/api/v1/admin", administracaoRouter);
 app.use("/api/v1/perfis", perfisRouter);
 app.use("/api/v1/favoritos", favoritosRouter);
 app.use("/api/v1/candidaturas", candidaturasRouter);
-
+app.use("/api/v1/admin/mentores", mentoresAdminRouter);
+app.use("/api/v1/mentor", mentorRouter);
+app.use("/api/v1/mentores", mentoresPublicoRouter);
+app.use("/api/v1/candidato/mentorias", candidatoMentoriaRouter);
 app.use(notFound);
 app.use(errorHandler);
 

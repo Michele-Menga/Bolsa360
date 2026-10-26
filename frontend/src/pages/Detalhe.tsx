@@ -6,7 +6,6 @@ import { Badge, Card, ErroCaixa, Skeleton } from "@/components/ui/misc";
 import { FavoritoBotao } from "@/components/OportunidadeCard";
 import { ProcessingOverlay } from "@/components/LoadingScreens";
 import { useAuth } from "@/auth/AuthContext";
-import { temAreaDeCandidato } from "@/auth/destino";
 import { useCandidaturas, useCriarCandidatura, useOportunidade } from "@/lib/queries";
 import { ApiError } from "@/lib/api";
 import { data, dinheiro, ELEGIBILIDADE, FINANCIAMENTO, MODALIDADE, nomePais, PRAZO } from "@/lib/format";
@@ -22,7 +21,6 @@ export default function Detalhe() {
   const criar = useCriarCandidatura();
   const [fase, setFase] = useState<"idle" | "a" | "ok">("idle");
   const [erro, setErro] = useState<string | null>(null);
-  const podePlanear = !user || temAreaDeCandidato(user.papel); // ADMIN e MENTOR só consultam
   const existente = cands?.find((c) => c.oportunidade.id === id && !["CANCELADA", "REJEITADA"].includes(c.estado));
 
   async function planear() {
@@ -77,11 +75,11 @@ export default function Detalhe() {
               <li className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-brand-dark" />{nomePais(o.paisDestinoCodigo)} · {MODALIDADE[o.modalidade ?? "NAO_APLICAVEL"]}</li>
             </ul>
             {erro && <ErroCaixa erro={new Error(erro)} />}
-            {podePlanear && (existente
+            {(!user || user.papel === "CANDIDATO") && (existente
               ? <Link to="/painel?tab=candidaturas" className="block"><Button variant="dark" className="w-full">Ver a minha candidatura</Button></Link>
               : <Button className="w-full" size="lg" onClick={planear} disabled={o.estadoPrazo === "EXPIRADO"}>{o.estadoPrazo === "EXPIRADO" ? "Prazo terminado" : "Planear candidatura"}</Button>)}
             <div className="flex gap-2">
-              {podePlanear && <FavoritoBotao id={o.id} />}
+              {(!user || user.papel === "CANDIDATO") && <FavoritoBotao id={o.id} />}
               <a href={o.urlCandidatura ?? o.urlFonteOficial} target="_blank" rel="noreferrer" className="flex-1"><Button variant="outline" className="w-full"><ExternalLink className="h-4 w-4" />Site oficial</Button></a>
             </div>
             <p className="text-xs text-mute">Última verificação: {data(o.ultimaVerificacaoEm)}. Confirma sempre os detalhes na fonte oficial.</p>

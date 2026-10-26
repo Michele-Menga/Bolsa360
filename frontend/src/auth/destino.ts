@@ -7,6 +7,7 @@ import type { Papel } from "@/lib/types";
 export function paginaInicial(papel: Papel): string {
   if (papel === "ADMIN") return "/admin";
   if (papel === "CANDIDATO") return "/painel";
+  if (papel === "MENTOR") return "/mentor";
   return "/";
 }
 

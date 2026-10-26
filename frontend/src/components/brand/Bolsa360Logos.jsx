@@ -157,6 +157,19 @@ const BOOK_DARK = "M55 84 C55 67.3 55 50.7 55 34 C44 24 28 22 14 30 C14 46.7 14 
 const BOOK_GOLD = "M55 34 C66 24 82 22 96 30 C96 46.7 96 63.3 96 80 C82 74 68 76 55 84";
 const BOOK_LINES = "M23 48H45M23 58H45M23 68H37M65 48H87M65 58H87M65 68H79";
 
+/* ───────────── Logo 2.1 · Símbolo do Livro Bolsa360 ───────────── */
+export function BookLogo({ size = 240, theme = "dark", title = "Bolsa360 — Livro de Oportunidades" }) {
+  const ink = theme === "dark" ? BRAND.white : BRAND.black;
+  const common = { fill: "none", strokeWidth: 10, strokeLinecap: "round", strokeLinejoin: "round" };
+  return (
+    <svg viewBox="0 0 110 110" width={size} height={size} role={title ? "img" : "presentation"} aria-label={title || undefined}>
+      <path d={BOOK_DARK} {...common} stroke={ink} />
+      <path d={BOOK_GOLD} {...common} stroke={BRAND.yellow} />
+      <path d={BOOK_LINES} fill="none" stroke={ink} strokeWidth="3.5" strokeLinecap="round" opacity="0.65" />
+    </svg>
+  );
+}
+
 export function BMark({ size = 160, theme = "light", mode = "static", loop = true, duration = 2.4, title = "Bolsa360" }) {
   const reduced = useReducedMotion();
   const m = reduced ? "static" : mode;
@@ -180,6 +193,10 @@ export function BMark({ size = 160, theme = "light", mode = "static", loop = tru
       fill="freeze"
     />
   );
+
+  if (m === "book") {
+    return <BookLogo size={size} theme={theme} title={title} />;
+  }
 
   if (m === "morph") {
     return (
